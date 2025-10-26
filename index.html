@@ -5,6 +5,10 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Reaction Test</title>
+    <link rel="icon" type="image/x-icon" href="favicon.ico">
+    <link rel="icon" type="image/png" sizes="32x32" href="favicon-32x32.png">
+    <link rel="icon" type="image/png" sizes="16x16" href="favicon-16x16.png">
+    <link rel="apple-touch-icon" sizes="180x180" href="apple-touch-icon.png">
     <style>
         * {
             margin: 0;
@@ -372,6 +376,7 @@
                 transform: scale(0.8);
                 opacity: 0.8;
             }
+
             100% {
                 transform: scale(1.5);
                 opacity: 0;
@@ -601,7 +606,7 @@
         <div class="rules-content">
             <h3 class="rules-title">Focus Challenge</h3>
             <p class="rules-text">
-                Click the colorful fruits as fast as you can!<br>
+                Click the colorful dots as fast as you can!<br>
                 Test your focus and reaction speed.<br>
                 The game gets more challenging as you progress.
             </p>
@@ -676,19 +681,23 @@
             targetTimeouts = [];
             clearInterval(gameTimer);
 
-            // Stop all shaking animations immediately
-            body.classList.add('scare-mode');
-
-            // Show overlay with smooth transition
-            overlay.classList.add('active');
+            // Play scream 0.5 seconds before visual
             playScream();
-            triggerVibration();
 
             setTimeout(() => {
-                overlay.classList.remove('active');
-                body.classList.remove('scare-mode');
-                resetGame();
-            }, 2000);
+                // Stop all shaking animations
+                body.classList.add('scare-mode');
+
+                // Show overlay with smooth transition
+                overlay.classList.add('active');
+                triggerVibration();
+
+                setTimeout(() => {
+                    overlay.classList.remove('active');
+                    body.classList.remove('scare-mode');
+                    resetGame();
+                }, 2000);
+            }, 500);
         }
 
         function flashScreen() {
@@ -707,7 +716,7 @@
             effect.style.borderRadius = '50%';
             effect.style.width = '60px';
             effect.style.height = '60px';
-            
+
             gameScreen.appendChild(effect);
             setTimeout(() => effect.remove(), 300);
         }
@@ -785,9 +794,9 @@
             if (intensity >= 12) target.classList.add('critical');
 
             // Create different fruit SVGs that change with each click
-            // Create minimal colored circles
+            // Create varied shapes with colors
             const colors = [
-                '#ff4757', '#2ed573', '#1e90ff', '#ffa502', 
+                '#ff4757', '#2ed573', '#1e90ff', '#ffa502',
                 '#ff6b81', '#70a1ff', '#5352ed', '#ff3838',
                 '#ff9ff3', '#54a0ff', '#5f27cd', '#00d2d3',
                 '#ff9f43', '#10ac84', '#ee5a24', '#0984e3',
@@ -796,10 +805,32 @@
             ];
 
             const randomColor = colors[Math.floor(Math.random() * colors.length)];
-            
-            target.innerHTML = `<svg viewBox="0 0 40 40">
-                <circle cx="20" cy="20" r="16" fill="${randomColor}"/>
-            </svg>`;
+            const shapeType = Math.floor(Math.random() * 6);
+
+            let shapeHTML = '';
+
+            switch (shapeType) {
+                case 0: // Circle
+                    shapeHTML = `<circle cx="20" cy="20" r="16" fill="${randomColor}"/>`;
+                    break;
+                case 1: // Square
+                    shapeHTML = `<rect x="6" y="6" width="28" height="28" rx="4" fill="${randomColor}"/>`;
+                    break;
+                case 2: // Diamond
+                    shapeHTML = `<polygon points="20,4 36,20 20,36 4,20" fill="${randomColor}"/>`;
+                    break;
+                case 3: // Triangle
+                    shapeHTML = `<polygon points="20,4 34,32 6,32" fill="${randomColor}"/>`;
+                    break;
+                case 4: // Star
+                    shapeHTML = `<polygon points="20,2 24,14 36,14 27,22 31,34 20,28 9,34 13,22 4,14 16,14" fill="${randomColor}"/>`;
+                    break;
+                case 5: // Hexagon
+                    shapeHTML = `<polygon points="20,4 32,12 32,28 20,36 8,28 8,12" fill="${randomColor}"/>`;
+                    break;
+            }
+
+            target.innerHTML = `<svg viewBox="0 0 40 40">${shapeHTML}</svg>`;
 
             // Random position (avoiding edges and other targets)
             let x, y, attempts = 0;
