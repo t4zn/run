@@ -362,21 +362,16 @@
 
         .hit-effect {
             position: absolute;
-            width: 60px;
-            height: 60px;
-            border: 1px solid #ccc;
-            border-radius: 50%;
             pointer-events: none;
-            animation: hitExplosion 0.2s ease-out forwards;
+            animation: simpleExpand 0.2s ease-out forwards;
             z-index: 15;
         }
 
-        @keyframes hitExplosion {
+        @keyframes simpleExpand {
             0% {
                 transform: scale(0.8);
                 opacity: 0.8;
             }
-
             100% {
                 transform: scale(1.5);
                 opacity: 0;
@@ -706,8 +701,13 @@
         function createHitEffect(x, y) {
             const effect = document.createElement('div');
             effect.className = 'hit-effect';
-            effect.style.left = (x - 50) + 'px';
-            effect.style.top = (y - 50) + 'px';
+            effect.style.left = (x - 30) + 'px';
+            effect.style.top = (y - 30) + 'px';
+            effect.style.border = '2px solid #ddd';
+            effect.style.borderRadius = '50%';
+            effect.style.width = '60px';
+            effect.style.height = '60px';
+            
             gameScreen.appendChild(effect);
             setTimeout(() => effect.remove(), 300);
         }
@@ -785,92 +785,21 @@
             if (intensity >= 12) target.classList.add('critical');
 
             // Create different fruit SVGs that change with each click
-            const fruitSvgs = [
-                // Apple
-                `<svg viewBox="0 0 40 40">
-                    <path d="M20 35c-8 0-12-6-12-12 0-8 6-12 12-12s12 4 12 12c0 6-4 12-12 12z" fill="#ff4444"/>
-                    <path d="M18 8c0-2 2-4 4-4s4 2 4 4" stroke="#8B4513" stroke-width="2" fill="none"/>
-                    <ellipse cx="25" cy="15" rx="3" ry="2" fill="#228B22"/>
-                </svg>`,
-
-                // Orange
-                `<svg viewBox="0 0 40 40">
-                    <circle cx="20" cy="22" r="12" fill="#ff8800"/>
-                    <circle cx="16" cy="18" r="1" fill="#ffaa44"/>
-                    <circle cx="24" cy="20" r="1" fill="#ffaa44"/>
-                    <circle cx="18" cy="26" r="1" fill="#ffaa44"/>
-                    <path d="M18 8c0-2 2-4 4-4s4 2 4 4" stroke="#8B4513" stroke-width="2" fill="none"/>
-                    <ellipse cx="25" cy="12" rx="3" ry="2" fill="#228B22"/>
-                </svg>`,
-
-                // Banana
-                `<svg viewBox="0 0 40 40">
-                    <path d="M8 15c2-8 8-10 14-8s8 8 6 16-8 10-14 8-8-8-6-16z" fill="#ffdd00"/>
-                    <path d="M10 17c1-2 2-3 4-3" stroke="#ffaa00" stroke-width="1" fill="none"/>
-                    <path d="M12 25c2-1 3-2 4-4" stroke="#ffaa00" stroke-width="1" fill="none"/>
-                    <circle cx="15" cy="12" r="2" fill="#8B4513"/>
-                </svg>`,
-
-                // Strawberry
-                `<svg viewBox="0 0 40 40">
-                    <path d="M20 32c-6 0-10-4-10-10 0-4 2-6 4-8l6-6 6 6c2 2 4 4 4 8 0 6-4 10-10 10z" fill="#ff1144"/>
-                    <circle cx="16" cy="18" r="1" fill="#ffff88"/>
-                    <circle cx="24" cy="20" r="1" fill="#ffff88"/>
-                    <circle cx="18" cy="24" r="1" fill="#ffff88"/>
-                    <circle cx="22" cy="26" r="1" fill="#ffff88"/>
-                    <path d="M16 8l4-2 4 2" fill="#228B22"/>
-                    <ellipse cx="20" cy="8" rx="4" ry="2" fill="#228B22"/>
-                </svg>`,
-
-                // Grapes
-                `<svg viewBox="0 0 40 40">
-                    <circle cx="18" cy="12" r="3" fill="#8844ff"/>
-                    <circle cx="22" cy="12" r="3" fill="#8844ff"/>
-                    <circle cx="16" cy="16" r="3" fill="#8844ff"/>
-                    <circle cx="20" cy="16" r="3" fill="#8844ff"/>
-                    <circle cx="24" cy="16" r="3" fill="#8844ff"/>
-                    <circle cx="18" cy="20" r="3" fill="#8844ff"/>
-                    <circle cx="22" cy="20" r="3" fill="#8844ff"/>
-                    <circle cx="20" cy="24" r="3" fill="#8844ff"/>
-                    <path d="M18 6c0-2 2-4 4-4s4 2 4 4" stroke="#8B4513" stroke-width="2" fill="none"/>
-                    <ellipse cx="22" cy="6" rx="2" ry="1" fill="#228B22"/>
-                </svg>`,
-
-                // Cherry
-                `<svg viewBox="0 0 40 40">
-                    <circle cx="15" cy="25" r="6" fill="#ff0044"/>
-                    <circle cx="25" cy="22" r="6" fill="#ff0044"/>
-                    <path d="M15 19c0-4 2-8 5-12" stroke="#228B22" stroke-width="2" fill="none"/>
-                    <path d="M25 16c0-4-2-8-5-12" stroke="#228B22" stroke-width="2" fill="none"/>
-                    <ellipse cx="18" cy="8" rx="2" ry="1" fill="#228B22"/>
-                    <ellipse cx="22" cy="8" rx="2" ry="1" fill="#228B22"/>
-                </svg>`,
-
-                // Pineapple
-                `<svg viewBox="0 0 40 40">
-                    <ellipse cx="20" cy="24" rx="8" ry="12" fill="#ffaa00"/>
-                    <path d="M14 18l12 0M14 22l12 0M14 26l12 0M14 30l12 0" stroke="#ff8800" stroke-width="1"/>
-                    <path d="M16 18l8 0M16 22l8 0M16 26l8 0M16 30l8 0" stroke="#ff6600" stroke-width="1"/>
-                    <path d="M16 8l2-2M18 8l2-4M20 8l2-4M22 8l2-4M24 8l2-2" stroke="#228B22" stroke-width="2"/>
-                    <ellipse cx="20" cy="10" rx="6" ry="3" fill="#228B22"/>
-                </svg>`,
-
-                // Watermelon slice
-                `<svg viewBox="0 0 40 40">
-                    <path d="M8 28c0-8 6-14 14-14s14 6 14 14z" fill="#ff4466"/>
-                    <path d="M10 28c0-7 5-12 12-12s12 5 12 12z" fill="#44ff44"/>
-                    <path d="M12 28c0-6 4-10 10-10s10 4 10 10z" fill="#ff4466"/>
-                    <circle cx="16" cy="22" r="1" fill="#000"/>
-                    <circle cx="20" cy="20" r="1" fill="#000"/>
-                    <circle cx="24" cy="22" r="1" fill="#000"/>
-                    <circle cx="18" cy="25" r="1" fill="#000"/>
-                    <circle cx="22" cy="25" r="1" fill="#000"/>
-                </svg>`
+            // Create minimal colored circles
+            const colors = [
+                '#ff4757', '#2ed573', '#1e90ff', '#ffa502', 
+                '#ff6b81', '#70a1ff', '#5352ed', '#ff3838',
+                '#ff9ff3', '#54a0ff', '#5f27cd', '#00d2d3',
+                '#ff9f43', '#10ac84', '#ee5a24', '#0984e3',
+                '#6c5ce7', '#a29bfe', '#fd79a8', '#fdcb6e',
+                '#e17055', '#00b894', '#00cec9', '#6c5ce7'
             ];
 
-            // Pick a random fruit for each target
-            const randomFruit = Math.floor(Math.random() * fruitSvgs.length);
-            target.innerHTML = fruitSvgs[randomFruit];
+            const randomColor = colors[Math.floor(Math.random() * colors.length)];
+            
+            target.innerHTML = `<svg viewBox="0 0 40 40">
+                <circle cx="20" cy="20" r="16" fill="${randomColor}"/>
+            </svg>`;
 
             // Random position (avoiding edges and other targets)
             let x, y, attempts = 0;
