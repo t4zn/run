@@ -1,0 +1,765 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Reaction Test</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+            background: #f5f5f5;
+            min-height: 100vh;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            transition: all 0.2s ease;
+            cursor: crosshair;
+        }
+
+        body.game-active {
+            cursor: crosshair;
+        }
+
+        .screen-flash {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100vw;
+            height: 100vh;
+            background: rgba(255, 0, 0, 0.1);
+            pointer-events: none;
+            z-index: 5;
+            opacity: 0;
+            transition: opacity 0.1s ease;
+        }
+
+        .screen-flash.active {
+            opacity: 1;
+        }
+
+        .game-container {
+            text-align: center;
+            position: relative;
+            width: 100vw;
+            height: 100vh;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+        }
+
+        .start-screen {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            gap: 20px;
+        }
+
+        .start-screen.hidden {
+            display: none;
+        }
+
+        .title {
+            font-size: 24px;
+            color: #333;
+            margin-bottom: 10px;
+        }
+
+        .subtitle {
+            font-size: 16px;
+            color: #666;
+            margin-bottom: 20px;
+        }
+
+        .start-button {
+            background: #333;
+            color: white;
+            border: none;
+            border-radius: 20px;
+            padding: 12px 24px;
+            font-size: 14px;
+            font-weight: 500;
+            cursor: pointer;
+            transition: all 0.2s ease;
+        }
+
+        .start-button:hover {
+            background: #444;
+        }
+
+        .game-screen {
+            display: none;
+            width: 100%;
+            height: 100%;
+            position: relative;
+        }
+
+        .game-screen.active {
+            display: block;
+        }
+
+        .score {
+            position: absolute;
+            top: 20px;
+            left: 20px;
+            font-size: 16px;
+            color: #666;
+            z-index: 10;
+            font-weight: normal;
+            transition: all 0.1s ease;
+        }
+
+        .score.hit {
+            color: #333;
+        }
+
+        .timer {
+            position: absolute;
+            top: 20px;
+            right: 20px;
+            font-size: 16px;
+            color: #666;
+            z-index: 10;
+            font-weight: normal;
+            transition: all 0.2s ease;
+        }
+
+        .timer.urgent {
+            color: #999;
+        }
+
+        @keyframes timerPulse {
+
+            0%,
+            100% {
+                transform: scale(1);
+            }
+
+            50% {
+                transform: scale(1.1);
+            }
+        }
+
+        .target {
+            position: absolute;
+            width: 40px;
+            height: 40px;
+            cursor: pointer;
+            transition: all 0.05s ease;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+
+        .target:hover {
+            transform: scale(1.1);
+        }
+
+        .target.fast {
+            animation: targetFastPulse 0.15s ease-in-out infinite alternate;
+        }
+
+        .target.critical {
+            animation: targetCritical 0.1s ease-in-out infinite;
+        }
+
+        .target svg {
+            width: 100%;
+            height: 100%;
+            transition: all 0.1s ease;
+        }
+
+        .target:hover svg {
+            transform: rotate(45deg);
+        }
+
+        .target.fast svg {
+            animation: svgSpin 0.5s linear infinite;
+        }
+
+        .target.critical svg {
+            animation: svgPulse 0.2s ease-in-out infinite alternate;
+        }
+
+        @keyframes svgSpin {
+            from {
+                transform: rotate(0deg);
+            }
+
+            to {
+                transform: rotate(360deg);
+            }
+        }
+
+        @keyframes svgPulse {
+            from {
+                transform: scale(1);
+            }
+
+            to {
+                transform: scale(1.2);
+            }
+        }
+
+        @keyframes targetPulse {
+            from {
+                transform: scale(1);
+                opacity: 0.9;
+            }
+
+            to {
+                transform: scale(1.08);
+                opacity: 1;
+            }
+        }
+
+        @keyframes targetFastPulse {
+            from {
+                transform: scale(1.02);
+                opacity: 0.95;
+            }
+
+            to {
+                transform: scale(1.12);
+                opacity: 1;
+            }
+        }
+
+        @keyframes targetCritical {
+
+            0%,
+            100% {
+                transform: scale(1) rotate(0deg);
+            }
+
+            25% {
+                transform: scale(1.1) rotate(2deg);
+            }
+
+            75% {
+                transform: scale(1.1) rotate(-2deg);
+            }
+        }
+
+        .hit-effect {
+            position: absolute;
+            width: 60px;
+            height: 60px;
+            border: 1px solid #ccc;
+            border-radius: 50%;
+            pointer-events: none;
+            animation: hitExplosion 0.2s ease-out forwards;
+            z-index: 15;
+        }
+
+        @keyframes hitExplosion {
+            0% {
+                transform: scale(0.8);
+                opacity: 0.8;
+            }
+
+            100% {
+                transform: scale(1.5);
+                opacity: 0;
+            }
+        }
+
+
+
+
+
+        .overlay {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100vw;
+            height: 100vh;
+            background: black;
+            display: none;
+            align-items: center;
+            justify-content: center;
+            z-index: 9999;
+        }
+
+        .overlay.active {
+            display: flex;
+        }
+
+        .scare-image {
+            max-width: 100vw;
+            max-height: 100vh;
+            object-fit: contain;
+        }
+
+        /* Intensity effects */
+        .intensity-1 {
+            background: #f0f0f0;
+        }
+
+        .intensity-2 {
+            background: #e8e8e8;
+        }
+
+        .intensity-3 {
+            background: #e0e0e0;
+            animation: subtleShake 3s ease-in-out infinite;
+        }
+
+        .intensity-4 {
+            background: #d8d8d8;
+            animation: subtleShake 2s ease-in-out infinite;
+        }
+
+        .intensity-5 {
+            background: #d0d0d0;
+            animation: mediumShake 1.5s ease-in-out infinite;
+        }
+
+        .intensity-6 {
+            background: #c8c8c8;
+            animation: mediumShake 1s ease-in-out infinite;
+        }
+
+        .intensity-7 {
+            background: #c0c0c0;
+            animation: intenseShake 0.8s ease-in-out infinite;
+        }
+
+        .intensity-8 {
+            background: #b8b8b8;
+            animation: intenseShake 0.6s ease-in-out infinite;
+        }
+
+        .intensity-9 {
+            background: #b0b0b0;
+            animation: crazyShake 0.4s ease-in-out infinite;
+        }
+
+        .intensity-10 {
+            background: #a8a8a8;
+            animation: crazyShake 0.2s ease-in-out infinite;
+        }
+
+        @keyframes subtleShake {
+
+            0%,
+            100% {
+                transform: translateX(0);
+            }
+
+            50% {
+                transform: translateX(1px);
+            }
+        }
+
+        @keyframes mediumShake {
+
+            0%,
+            100% {
+                transform: translate(0, 0);
+            }
+
+            25% {
+                transform: translate(1px, 1px);
+            }
+
+            75% {
+                transform: translate(-1px, -1px);
+            }
+        }
+
+        @keyframes intenseShake {
+
+            0%,
+            100% {
+                transform: translate(0, 0);
+            }
+
+            10% {
+                transform: translate(2px, -1px);
+            }
+
+            20% {
+                transform: translate(-1px, 2px);
+            }
+
+            30% {
+                transform: translate(1px, 1px);
+            }
+
+            40% {
+                transform: translate(-2px, -1px);
+            }
+
+            50% {
+                transform: translate(2px, 2px);
+            }
+
+            60% {
+                transform: translate(-1px, 1px);
+            }
+
+            70% {
+                transform: translate(1px, -2px);
+            }
+
+            80% {
+                transform: translate(-2px, 2px);
+            }
+
+            90% {
+                transform: translate(2px, -1px);
+            }
+        }
+
+        @keyframes crazyShake {
+
+            0%,
+            100% {
+                transform: translate(0, 0) rotate(0deg);
+            }
+
+            10% {
+                transform: translate(3px, -2px) rotate(1deg);
+            }
+
+            20% {
+                transform: translate(-2px, 3px) rotate(-1deg);
+            }
+
+            30% {
+                transform: translate(2px, 2px) rotate(1deg);
+            }
+
+            40% {
+                transform: translate(-3px, -1px) rotate(-1deg);
+            }
+
+            50% {
+                transform: translate(3px, 3px) rotate(1deg);
+            }
+
+            60% {
+                transform: translate(-1px, 2px) rotate(-1deg);
+            }
+
+            70% {
+                transform: translate(2px, -3px) rotate(1deg);
+            }
+
+            80% {
+                transform: translate(-3px, 3px) rotate(-1deg);
+            }
+
+            90% {
+                transform: translate(3px, -1px) rotate(1deg);
+            }
+        }
+    </style>
+</head>
+
+<body>
+    <div class="screen-flash" id="screenFlash"></div>
+
+    <div class="game-container">
+        <div class="start-screen" id="startScreen">
+            <h1 class="title">Focus Test</h1>
+            <p class="subtitle">Click the dots</p>
+            <button class="start-button" id="startButton">Start</button>
+        </div>
+
+        <div class="game-screen" id="gameScreen">
+            <div class="score" id="score">0</div>
+            <div class="timer" id="timer">60</div>
+        </div>
+    </div>
+
+    <div class="overlay" id="overlay">
+        <img src="scare.png" alt="surprise" class="scare-image" id="scareImage">
+    </div>
+
+    <audio id="screamAudio" preload="auto">
+        <source src="scream.mp3" type="audio/mpeg">
+    </audio>
+
+    <script>
+        const startScreen = document.getElementById('startScreen');
+        const gameScreen = document.getElementById('gameScreen');
+        const startButton = document.getElementById('startButton');
+        const scoreElement = document.getElementById('score');
+        const timerElement = document.getElementById('timer');
+        const overlay = document.getElementById('overlay');
+        const screamAudio = document.getElementById('screamAudio');
+        const body = document.body;
+
+        let score = 0;
+        let gameActive = false;
+        let targetTimeout;
+        let gameTimer;
+        let timeLeft = 60;
+        let intensity = 1;
+        let targetSpeed = 1500; // Initial target spawn time (faster start)
+        let combo = 0;
+        let missedTargets = 0;
+        let screenFlash;
+
+        function triggerVibration() {
+            if ('vibrate' in navigator) {
+                navigator.vibrate([200, 100, 200, 100, 200]);
+            }
+        }
+
+        function playScream() {
+            screamAudio.currentTime = 0;
+            screamAudio.play().catch(error => {
+                console.log('Audio playback failed:', error);
+            });
+        }
+
+        function showScare() {
+            gameActive = false;
+            clearTimeout(targetTimeout);
+            clearInterval(gameTimer);
+            overlay.classList.add('active');
+            playScream();
+            triggerVibration();
+
+            setTimeout(() => {
+                overlay.classList.remove('active');
+                resetGame();
+            }, 3000);
+        }
+
+        function flashScreen() {
+            screenFlash.classList.add('active');
+            setTimeout(() => screenFlash.classList.remove('active'), 100);
+        }
+
+
+
+        function createHitEffect(x, y) {
+            const effect = document.createElement('div');
+            effect.className = 'hit-effect';
+            effect.style.left = (x - 50) + 'px';
+            effect.style.top = (y - 50) + 'px';
+            gameScreen.appendChild(effect);
+            setTimeout(() => effect.remove(), 300);
+        }
+
+        function updateIntensity() {
+            // More aggressive intensity scaling for 60 seconds
+            const timeElapsed = 60 - timeLeft;
+            intensity = Math.min(15, Math.floor(timeElapsed / 4) + 1);
+            body.className = `intensity-${Math.min(10, intensity)} game-active`;
+
+            // Much faster target spawning - gets insane by 40 seconds
+            targetSpeed = Math.max(80, 1200 - (intensity * 75));
+
+            // Make timer urgent in final seconds
+            if (timeLeft <= 15) {
+                timerElement.classList.add('urgent');
+            }
+        }
+
+        function updateTimer() {
+            timeLeft--;
+            timerElement.textContent = timeLeft;
+
+            // Trigger jumpscare at 7 seconds remaining (53 seconds elapsed)
+            if (timeLeft === 7) {
+                setTimeout(showScare, 500);
+                return;
+            }
+
+            // Game over if timer reaches 0
+            if (timeLeft <= 0) {
+                gameActive = false;
+                clearTimeout(targetTimeout);
+                clearInterval(gameTimer);
+                alert(`Game Over! Final Score: ${score}`);
+                resetGame();
+            }
+        }
+
+        function createTarget() {
+            if (!gameActive) return;
+
+            const target = document.createElement('div');
+            target.className = 'target';
+
+            // Add intensity-based target classes
+            if (intensity >= 8) target.classList.add('fast');
+            if (intensity >= 12) target.classList.add('critical');
+
+            // Create different SVG targets based on intensity
+            const svgTargets = [
+                // Basic crosshair (levels 1-3)
+                `<svg viewBox="0 0 40 40" fill="none">
+                    <circle cx="20" cy="20" r="18" stroke="#333" stroke-width="2" fill="none"/>
+                    <line x1="20" y1="8" x2="20" y2="32" stroke="#333" stroke-width="1"/>
+                    <line x1="8" y1="20" x2="32" y2="20" stroke="#333" stroke-width="1"/>
+                    <circle cx="20" cy="20" r="3" fill="#333"/>
+                </svg>`,
+
+                // Target rings (levels 4-7)
+                `<svg viewBox="0 0 40 40" fill="none">
+                    <circle cx="20" cy="20" r="18" stroke="#333" stroke-width="2" fill="none"/>
+                    <circle cx="20" cy="20" r="12" stroke="#333" stroke-width="1" fill="none"/>
+                    <circle cx="20" cy="20" r="6" stroke="#333" stroke-width="1" fill="none"/>
+                    <circle cx="20" cy="20" r="2" fill="#333"/>
+                </svg>`,
+
+                // Diamond target (levels 8-11)
+                `<svg viewBox="0 0 40 40" fill="none">
+                    <polygon points="20,2 38,20 20,38 2,20" stroke="#333" stroke-width="2" fill="none"/>
+                    <polygon points="20,8 32,20 20,32 8,20" stroke="#333" stroke-width="1" fill="none"/>
+                    <circle cx="20" cy="20" r="4" fill="#333"/>
+                </svg>`,
+
+                // Star target (levels 12+)
+                `<svg viewBox="0 0 40 40" fill="none">
+                    <polygon points="20,2 24,14 38,14 28,22 32,36 20,28 8,36 12,22 2,14 16,14" stroke="#333" stroke-width="2" fill="none"/>
+                    <circle cx="20" cy="20" r="3" fill="#333"/>
+                </svg>`
+            ];
+
+            let svgIndex = 0;
+            if (intensity >= 12) svgIndex = 3;
+            else if (intensity >= 8) svgIndex = 2;
+            else if (intensity >= 4) svgIndex = 1;
+
+            target.innerHTML = svgTargets[svgIndex];
+
+            // Random position (avoiding edges more aggressively)
+            const margin = 80;
+            const x = Math.random() * (window.innerWidth - margin * 2) + margin;
+            const y = Math.random() * (window.innerHeight - 200) + 100;
+
+            target.style.left = x + 'px';
+            target.style.top = y + 'px';
+
+            let targetHit = false;
+
+            target.addEventListener('click', (e) => {
+                if (targetHit) return;
+                targetHit = true;
+
+                score++;
+                combo++;
+
+                // Minimal visual feedback
+                scoreElement.textContent = score;
+                scoreElement.classList.add('hit');
+                setTimeout(() => scoreElement.classList.remove('hit'), 100);
+
+                // Hit effect at click position
+                createHitEffect(e.clientX, e.clientY);
+
+                // Screen flash for high combos
+                if (combo >= 5) {
+                    flashScreen();
+                }
+
+                // Vibration feedback
+                if ('vibrate' in navigator) {
+                    navigator.vibrate(50);
+                }
+
+                target.remove();
+                updateIntensity();
+
+                // Spawn next target immediately for high intensity
+                if (gameActive) {
+                    const nextDelay = intensity >= 10 ? targetSpeed * 0.3 : targetSpeed * 0.8;
+                    targetTimeout = setTimeout(createTarget, nextDelay);
+                }
+            });
+
+            // Much shorter target lifetime for extreme pressure
+            const lifetime = Math.max(400, 1800 - (intensity * 120));
+            setTimeout(() => {
+                if (target.parentNode && !targetHit) {
+                    target.remove();
+                    missedTargets++;
+                    combo = 0; // Reset combo on miss
+
+                    // Punishment flash
+                    flashScreen();
+
+                    if (gameActive) {
+                        targetTimeout = setTimeout(createTarget, targetSpeed);
+                    }
+                }
+            }, lifetime);
+
+            gameScreen.appendChild(target);
+        }
+
+        function startGame() {
+            startScreen.classList.add('hidden');
+            gameScreen.classList.add('active');
+            gameActive = true;
+            score = 0;
+            combo = 0;
+            missedTargets = 0;
+            timeLeft = 60;
+            intensity = 1;
+            targetSpeed = 1200;
+            scoreElement.textContent = '0';
+            timerElement.textContent = '60';
+            timerElement.classList.remove('urgent');
+            body.className = 'intensity-1 game-active';
+
+            // Get screen flash element
+            screenFlash = document.getElementById('screenFlash');
+
+            // Start timer (counts down every second)
+            gameTimer = setInterval(updateTimer, 1000);
+
+            // Start spawning targets immediately and aggressively
+            targetTimeout = setTimeout(createTarget, 500);
+        }
+
+        function resetGame() {
+            gameActive = false;
+            clearTimeout(targetTimeout);
+            clearInterval(gameTimer);
+            startScreen.classList.remove('hidden');
+            gameScreen.classList.remove('active');
+            body.className = '';
+            timeLeft = 60;
+            combo = 0;
+            missedTargets = 0;
+            timerElement.classList.remove('urgent');
+
+            // Remove any remaining targets and effects
+            const targets = document.querySelectorAll('.target');
+            const effects = document.querySelectorAll('.hit-effect');
+            targets.forEach(target => target.remove());
+            effects.forEach(effect => effect.remove());
+        }
+
+        startButton.addEventListener('click', startGame);
+
+        startButton.addEventListener('keydown', (e) => {
+            if (e.key === 'Enter' || e.key === ' ') {
+                e.preventDefault();
+                startGame();
+            }
+        });
+
+        // Preload audio on first user interaction
+        document.addEventListener('click', () => {
+            screamAudio.load();
+        }, { once: true });
+    </script>
+</body>
+
+</html>
