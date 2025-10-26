@@ -74,6 +74,110 @@
             display: none;
         }
 
+        .rules-popup {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100vw;
+            height: 100vh;
+            background: rgba(0, 0, 0, 0.5);
+            display: none;
+            align-items: center;
+            justify-content: center;
+            z-index: 100;
+        }
+
+        .rules-popup.active {
+            display: flex;
+        }
+
+        .rules-content {
+            background: white;
+            border-radius: 12px;
+            padding: 30px;
+            max-width: 400px;
+            text-align: center;
+            box-shadow: 0 10px 30px rgba(0, 0, 0, 0.3);
+        }
+
+        .rules-title {
+            font-size: 20px;
+            font-weight: bold;
+            color: #333;
+            margin-bottom: 15px;
+        }
+
+        .rules-text {
+            font-size: 14px;
+            color: #666;
+            line-height: 1.4;
+            margin-bottom: 20px;
+        }
+
+        .focus-levels {
+            margin: 20px 0;
+            text-align: left;
+        }
+
+        .focus-levels h4 {
+            font-size: 14px;
+            color: #333;
+            margin-bottom: 10px;
+            text-align: center;
+        }
+
+        .level-labels {
+            position: relative;
+            width: 100%;
+            height: 20px;
+            margin-bottom: 5px;
+        }
+
+        .level-label {
+            position: absolute;
+            font-size: 11px;
+            font-weight: bold;
+            color: #666;
+            transform: translateX(-50%);
+        }
+
+        .level-bar {
+            width: 100%;
+            height: 12px;
+            background: linear-gradient(90deg, #ffcccc 0%, #ffcccc 33%, #fff4cc 33%, #fff4cc 66%, #ccffcc 66%, #ccffcc 100%);
+            border-radius: 6px;
+            margin: 5px 0 15px 0;
+            overflow: hidden;
+            position: relative;
+        }
+
+        .level-progress {
+            height: 100%;
+            background: #ff4444;
+            width: 0%;
+            transition: all 0.3s ease;
+            border-radius: 6px;
+        }
+
+        .level-progress.pro-level {
+            background: #44ff44;
+        }
+
+        .continue-button {
+            background: #333;
+            color: white;
+            border: none;
+            border-radius: 8px;
+            padding: 10px 20px;
+            font-size: 14px;
+            cursor: pointer;
+            transition: all 0.2s ease;
+        }
+
+        .continue-button:hover {
+            background: #444;
+        }
+
         .title {
             font-size: 24px;
             color: #333;
@@ -294,10 +398,18 @@
             align-items: center;
             justify-content: center;
             z-index: 9999;
+            opacity: 0;
+            transition: opacity 0.1s ease-in;
         }
 
         .overlay.active {
             display: flex;
+            opacity: 1;
+        }
+
+        body.scare-mode {
+            animation: none !important;
+            transform: none !important;
         }
 
         .scare-image {
@@ -490,6 +602,32 @@
         </div>
     </div>
 
+    <div class="rules-popup" id="rulesPopup">
+        <div class="rules-content">
+            <h3 class="rules-title">Focus Challenge</h3>
+            <p class="rules-text">
+                Click the colorful fruits as fast as you can!<br>
+                Test your focus and reaction speed.<br>
+                The game gets more challenging as you progress.
+            </p>
+
+            <div class="focus-levels">
+                <h4>Focus Levels</h4>
+                <div class="level-labels">
+                    <span class="level-label" style="left: 16%;">Slow (30+)</span>
+                    <span class="level-label" style="left: 50%;">Fast (60+)</span>
+                    <span class="level-label" style="left: 83%;">Pro (90+)</span>
+                </div>
+            </div>
+
+            <div class="level-bar">
+                <div class="level-progress" id="levelProgress"></div>
+            </div>
+
+            <button class="continue-button" id="continueButton">Start Challenge</button>
+        </div>
+    </div>
+
     <div class="overlay" id="overlay">
         <img src="scare.png" alt="surprise" class="scare-image" id="scareImage">
     </div>
@@ -506,6 +644,9 @@
         const timerElement = document.getElementById('timer');
         const overlay = document.getElementById('overlay');
         const screamAudio = document.getElementById('screamAudio');
+        const rulesPopup = document.getElementById('rulesPopup');
+        const continueButton = document.getElementById('continueButton');
+        const levelProgress = document.getElementById('levelProgress');
         const body = document.body;
 
         let score = 0;
@@ -539,14 +680,20 @@
             targetTimeouts.forEach(timeout => clearTimeout(timeout));
             targetTimeouts = [];
             clearInterval(gameTimer);
+
+            // Stop all shaking animations immediately
+            body.classList.add('scare-mode');
+
+            // Show overlay with smooth transition
             overlay.classList.add('active');
             playScream();
             triggerVibration();
 
             setTimeout(() => {
                 overlay.classList.remove('active');
+                body.classList.remove('scare-mode');
                 resetGame();
-            }, 3000);
+            }, 2000);
         }
 
         function flashScreen() {
@@ -579,9 +726,30 @@
             else if (intensity >= 5) maxTargets = 2;
             else maxTargets = 1;
 
+            // Update focus level progress bar
+            updateFocusLevel();
+
             // Make timer urgent in final seconds
             if (timeLeft <= 15) {
                 timerElement.classList.add('urgent');
+            }
+        }
+
+        function updateFocusLevel() {
+            let progress = 0;
+            if (score >= 60) {
+                progress = 100;
+                levelProgress.classList.add('pro-level');
+            } else if (score >= 30) {
+                progress = 50 + ((score - 30) / 30) * 50;
+                levelProgress.classList.add('pro-level');
+            } else {
+                progress = (score / 30) * 50;
+                levelProgress.classList.remove('pro-level');
+            }
+
+            if (levelProgress) {
+                levelProgress.style.width = progress + '%';
             }
         }
 
@@ -616,44 +784,93 @@
             if (intensity >= 8) target.classList.add('fast');
             if (intensity >= 12) target.classList.add('critical');
 
-            // Create different SVG targets based on intensity
-            const svgTargets = [
-                // Basic crosshair (levels 1-3)
-                `<svg viewBox="0 0 40 40" fill="none">
-                    <circle cx="20" cy="20" r="18" stroke="#333" stroke-width="2" fill="none"/>
-                    <line x1="20" y1="8" x2="20" y2="32" stroke="#333" stroke-width="1"/>
-                    <line x1="8" y1="20" x2="32" y2="20" stroke="#333" stroke-width="1"/>
-                    <circle cx="20" cy="20" r="3" fill="#333"/>
+            // Create different fruit SVGs that change with each click
+            const fruitSvgs = [
+                // Apple
+                `<svg viewBox="0 0 40 40">
+                    <path d="M20 35c-8 0-12-6-12-12 0-8 6-12 12-12s12 4 12 12c0 6-4 12-12 12z" fill="#ff4444"/>
+                    <path d="M18 8c0-2 2-4 4-4s4 2 4 4" stroke="#8B4513" stroke-width="2" fill="none"/>
+                    <ellipse cx="25" cy="15" rx="3" ry="2" fill="#228B22"/>
                 </svg>`,
 
-                // Target rings (levels 4-7)
-                `<svg viewBox="0 0 40 40" fill="none">
-                    <circle cx="20" cy="20" r="18" stroke="#333" stroke-width="2" fill="none"/>
-                    <circle cx="20" cy="20" r="12" stroke="#333" stroke-width="1" fill="none"/>
-                    <circle cx="20" cy="20" r="6" stroke="#333" stroke-width="1" fill="none"/>
-                    <circle cx="20" cy="20" r="2" fill="#333"/>
+                // Orange
+                `<svg viewBox="0 0 40 40">
+                    <circle cx="20" cy="22" r="12" fill="#ff8800"/>
+                    <circle cx="16" cy="18" r="1" fill="#ffaa44"/>
+                    <circle cx="24" cy="20" r="1" fill="#ffaa44"/>
+                    <circle cx="18" cy="26" r="1" fill="#ffaa44"/>
+                    <path d="M18 8c0-2 2-4 4-4s4 2 4 4" stroke="#8B4513" stroke-width="2" fill="none"/>
+                    <ellipse cx="25" cy="12" rx="3" ry="2" fill="#228B22"/>
                 </svg>`,
 
-                // Diamond target (levels 8-11)
-                `<svg viewBox="0 0 40 40" fill="none">
-                    <polygon points="20,2 38,20 20,38 2,20" stroke="#333" stroke-width="2" fill="none"/>
-                    <polygon points="20,8 32,20 20,32 8,20" stroke="#333" stroke-width="1" fill="none"/>
-                    <circle cx="20" cy="20" r="4" fill="#333"/>
+                // Banana
+                `<svg viewBox="0 0 40 40">
+                    <path d="M8 15c2-8 8-10 14-8s8 8 6 16-8 10-14 8-8-8-6-16z" fill="#ffdd00"/>
+                    <path d="M10 17c1-2 2-3 4-3" stroke="#ffaa00" stroke-width="1" fill="none"/>
+                    <path d="M12 25c2-1 3-2 4-4" stroke="#ffaa00" stroke-width="1" fill="none"/>
+                    <circle cx="15" cy="12" r="2" fill="#8B4513"/>
                 </svg>`,
 
-                // Star target (levels 12+)
-                `<svg viewBox="0 0 40 40" fill="none">
-                    <polygon points="20,2 24,14 38,14 28,22 32,36 20,28 8,36 12,22 2,14 16,14" stroke="#333" stroke-width="2" fill="none"/>
-                    <circle cx="20" cy="20" r="3" fill="#333"/>
+                // Strawberry
+                `<svg viewBox="0 0 40 40">
+                    <path d="M20 32c-6 0-10-4-10-10 0-4 2-6 4-8l6-6 6 6c2 2 4 4 4 8 0 6-4 10-10 10z" fill="#ff1144"/>
+                    <circle cx="16" cy="18" r="1" fill="#ffff88"/>
+                    <circle cx="24" cy="20" r="1" fill="#ffff88"/>
+                    <circle cx="18" cy="24" r="1" fill="#ffff88"/>
+                    <circle cx="22" cy="26" r="1" fill="#ffff88"/>
+                    <path d="M16 8l4-2 4 2" fill="#228B22"/>
+                    <ellipse cx="20" cy="8" rx="4" ry="2" fill="#228B22"/>
+                </svg>`,
+
+                // Grapes
+                `<svg viewBox="0 0 40 40">
+                    <circle cx="18" cy="12" r="3" fill="#8844ff"/>
+                    <circle cx="22" cy="12" r="3" fill="#8844ff"/>
+                    <circle cx="16" cy="16" r="3" fill="#8844ff"/>
+                    <circle cx="20" cy="16" r="3" fill="#8844ff"/>
+                    <circle cx="24" cy="16" r="3" fill="#8844ff"/>
+                    <circle cx="18" cy="20" r="3" fill="#8844ff"/>
+                    <circle cx="22" cy="20" r="3" fill="#8844ff"/>
+                    <circle cx="20" cy="24" r="3" fill="#8844ff"/>
+                    <path d="M18 6c0-2 2-4 4-4s4 2 4 4" stroke="#8B4513" stroke-width="2" fill="none"/>
+                    <ellipse cx="22" cy="6" rx="2" ry="1" fill="#228B22"/>
+                </svg>`,
+
+                // Cherry
+                `<svg viewBox="0 0 40 40">
+                    <circle cx="15" cy="25" r="6" fill="#ff0044"/>
+                    <circle cx="25" cy="22" r="6" fill="#ff0044"/>
+                    <path d="M15 19c0-4 2-8 5-12" stroke="#228B22" stroke-width="2" fill="none"/>
+                    <path d="M25 16c0-4-2-8-5-12" stroke="#228B22" stroke-width="2" fill="none"/>
+                    <ellipse cx="18" cy="8" rx="2" ry="1" fill="#228B22"/>
+                    <ellipse cx="22" cy="8" rx="2" ry="1" fill="#228B22"/>
+                </svg>`,
+
+                // Pineapple
+                `<svg viewBox="0 0 40 40">
+                    <ellipse cx="20" cy="24" rx="8" ry="12" fill="#ffaa00"/>
+                    <path d="M14 18l12 0M14 22l12 0M14 26l12 0M14 30l12 0" stroke="#ff8800" stroke-width="1"/>
+                    <path d="M16 18l8 0M16 22l8 0M16 26l8 0M16 30l8 0" stroke="#ff6600" stroke-width="1"/>
+                    <path d="M16 8l2-2M18 8l2-4M20 8l2-4M22 8l2-4M24 8l2-2" stroke="#228B22" stroke-width="2"/>
+                    <ellipse cx="20" cy="10" rx="6" ry="3" fill="#228B22"/>
+                </svg>`,
+
+                // Watermelon slice
+                `<svg viewBox="0 0 40 40">
+                    <path d="M8 28c0-8 6-14 14-14s14 6 14 14z" fill="#ff4466"/>
+                    <path d="M10 28c0-7 5-12 12-12s12 5 12 12z" fill="#44ff44"/>
+                    <path d="M12 28c0-6 4-10 10-10s10 4 10 10z" fill="#ff4466"/>
+                    <circle cx="16" cy="22" r="1" fill="#000"/>
+                    <circle cx="20" cy="20" r="1" fill="#000"/>
+                    <circle cx="24" cy="22" r="1" fill="#000"/>
+                    <circle cx="18" cy="25" r="1" fill="#000"/>
+                    <circle cx="22" cy="25" r="1" fill="#000"/>
                 </svg>`
             ];
 
-            let svgIndex = 0;
-            if (intensity >= 12) svgIndex = 3;
-            else if (intensity >= 8) svgIndex = 2;
-            else if (intensity >= 4) svgIndex = 1;
-
-            target.innerHTML = svgTargets[svgIndex];
+            // Pick a random fruit for each target
+            const randomFruit = Math.floor(Math.random() * fruitSvgs.length);
+            target.innerHTML = fruitSvgs[randomFruit];
 
             // Random position (avoiding edges and other targets)
             let x, y, attempts = 0;
@@ -739,10 +956,10 @@
 
         function spawnTargets() {
             if (!gameActive) return;
-            
+
             // Spawn targets up to maxTargets
             const targetsToSpawn = Math.min(maxTargets - activeTargets, maxTargets);
-            
+
             for (let i = 0; i < targetsToSpawn; i++) {
                 const delay = i * (targetSpeed / maxTargets);
                 const timeoutId = setTimeout(() => {
@@ -752,7 +969,13 @@
             }
         }
 
+        function showRulesPopup() {
+            rulesPopup.classList.add('active');
+            updateFocusLevel(); // Initialize progress bar
+        }
+
         function startGame() {
+            rulesPopup.classList.remove('active');
             startScreen.classList.add('hidden');
             gameScreen.classList.add('active');
             gameActive = true;
@@ -799,9 +1022,18 @@
             effects.forEach(effect => effect.remove());
         }
 
-        startButton.addEventListener('click', startGame);
+        startButton.addEventListener('click', showRulesPopup);
 
         startButton.addEventListener('keydown', (e) => {
+            if (e.key === 'Enter' || e.key === ' ') {
+                e.preventDefault();
+                showRulesPopup();
+            }
+        });
+
+        continueButton.addEventListener('click', startGame);
+
+        continueButton.addEventListener('keydown', (e) => {
             if (e.key === 'Enter' || e.key === ' ') {
                 e.preventDefault();
                 startGame();
