@@ -510,7 +510,7 @@
 
         let score = 0;
         let gameActive = false;
-        let targetTimeout;
+        let targetTimeouts = [];
         let gameTimer;
         let timeLeft = 60;
         let intensity = 1;
@@ -518,6 +518,8 @@
         let combo = 0;
         let missedTargets = 0;
         let screenFlash;
+        let activeTargets = 0;
+        let maxTargets = 1;
 
         function triggerVibration() {
             if ('vibrate' in navigator) {
@@ -534,7 +536,8 @@
 
         function showScare() {
             gameActive = false;
-            clearTimeout(targetTimeout);
+            targetTimeouts.forEach(timeout => clearTimeout(timeout));
+            targetTimeouts = [];
             clearInterval(gameTimer);
             overlay.classList.add('active');
             playScream();
@@ -563,13 +566,18 @@
         }
 
         function updateIntensity() {
-            // More aggressive intensity scaling for 60 seconds
-            const timeElapsed = 60 - timeLeft;
-            intensity = Math.min(15, Math.floor(timeElapsed / 4) + 1);
+            // Intensity based on successful clicks (score)
+            intensity = Math.min(15, Math.floor(score / 3) + 1);
             body.className = `intensity-${Math.min(10, intensity)} game-active`;
 
-            // Much faster target spawning - gets insane by 40 seconds
-            targetSpeed = Math.max(80, 1200 - (intensity * 75));
+            // Much faster target spawning based on score
+            targetSpeed = Math.max(100, 1500 - (score * 40));
+
+            // Increase max targets based on intensity
+            if (intensity >= 12) maxTargets = 4;
+            else if (intensity >= 8) maxTargets = 3;
+            else if (intensity >= 5) maxTargets = 2;
+            else maxTargets = 1;
 
             // Make timer urgent in final seconds
             if (timeLeft <= 15) {
@@ -581,8 +589,8 @@
             timeLeft--;
             timerElement.textContent = timeLeft;
 
-            // Trigger jumpscare at 7 seconds remaining (53 seconds elapsed)
-            if (timeLeft === 7) {
+            // Trigger jumpscare when score reaches 50 OR at 7 seconds remaining
+            if (score >= 50 || timeLeft === 7) {
                 setTimeout(showScare, 500);
                 return;
             }
@@ -598,10 +606,11 @@
         }
 
         function createTarget() {
-            if (!gameActive) return;
+            if (!gameActive || activeTargets >= maxTargets) return;
 
             const target = document.createElement('div');
             target.className = 'target';
+            activeTargets++;
 
             // Add intensity-based target classes
             if (intensity >= 8) target.classList.add('fast');
@@ -646,10 +655,14 @@
 
             target.innerHTML = svgTargets[svgIndex];
 
-            // Random position (avoiding edges more aggressively)
-            const margin = 80;
-            const x = Math.random() * (window.innerWidth - margin * 2) + margin;
-            const y = Math.random() * (window.innerHeight - 200) + 100;
+            // Random position (avoiding edges and other targets)
+            let x, y, attempts = 0;
+            do {
+                const margin = 80;
+                x = Math.random() * (window.innerWidth - margin * 2) + margin;
+                y = Math.random() * (window.innerHeight - 200) + 100;
+                attempts++;
+            } while (attempts < 10 && isPositionTooClose(x, y));
 
             target.style.left = x + 'px';
             target.style.top = y + 'px';
@@ -662,6 +675,7 @@
 
                 score++;
                 combo++;
+                activeTargets--;
 
                 // Minimal visual feedback
                 scoreElement.textContent = score;
@@ -684,18 +698,18 @@
                 target.remove();
                 updateIntensity();
 
-                // Spawn next target immediately for high intensity
+                // Spawn multiple targets based on intensity
                 if (gameActive) {
-                    const nextDelay = intensity >= 10 ? targetSpeed * 0.3 : targetSpeed * 0.8;
-                    targetTimeout = setTimeout(createTarget, nextDelay);
+                    spawnTargets();
                 }
             });
 
-            // Much shorter target lifetime for extreme pressure
-            const lifetime = Math.max(400, 1800 - (intensity * 120));
-            setTimeout(() => {
+            // Much shorter target lifetime based on score
+            const lifetime = Math.max(600, 2000 - (score * 30));
+            const timeoutId = setTimeout(() => {
                 if (target.parentNode && !targetHit) {
                     target.remove();
+                    activeTargets--;
                     missedTargets++;
                     combo = 0; // Reset combo on miss
 
@@ -703,12 +717,39 @@
                     flashScreen();
 
                     if (gameActive) {
-                        targetTimeout = setTimeout(createTarget, targetSpeed);
+                        spawnTargets();
                     }
                 }
             }, lifetime);
 
+            targetTimeouts.push(timeoutId);
             gameScreen.appendChild(target);
+        }
+
+        function isPositionTooClose(x, y) {
+            const existingTargets = document.querySelectorAll('.target');
+            for (let target of existingTargets) {
+                const targetX = parseInt(target.style.left);
+                const targetY = parseInt(target.style.top);
+                const distance = Math.sqrt((x - targetX) ** 2 + (y - targetY) ** 2);
+                if (distance < 100) return true; // Too close to existing target
+            }
+            return false;
+        }
+
+        function spawnTargets() {
+            if (!gameActive) return;
+            
+            // Spawn targets up to maxTargets
+            const targetsToSpawn = Math.min(maxTargets - activeTargets, maxTargets);
+            
+            for (let i = 0; i < targetsToSpawn; i++) {
+                const delay = i * (targetSpeed / maxTargets);
+                const timeoutId = setTimeout(() => {
+                    createTarget();
+                }, delay);
+                targetTimeouts.push(timeoutId);
+            }
         }
 
         function startGame() {
@@ -732,13 +773,14 @@
             // Start timer (counts down every second)
             gameTimer = setInterval(updateTimer, 1000);
 
-            // Start spawning targets immediately and aggressively
-            targetTimeout = setTimeout(createTarget, 500);
+            // Start spawning targets immediately
+            spawnTargets();
         }
 
         function resetGame() {
             gameActive = false;
-            clearTimeout(targetTimeout);
+            targetTimeouts.forEach(timeout => clearTimeout(timeout));
+            targetTimeouts = [];
             clearInterval(gameTimer);
             startScreen.classList.remove('hidden');
             gameScreen.classList.remove('active');
@@ -746,6 +788,8 @@
             timeLeft = 60;
             combo = 0;
             missedTargets = 0;
+            activeTargets = 0;
+            maxTargets = 1;
             timerElement.classList.remove('urgent');
 
             // Remove any remaining targets and effects
