@@ -489,119 +489,40 @@
         }
 
         @keyframes subtleShake {
-
-            0%,
-            100% {
-                transform: translateX(0);
-            }
-
-            50% {
-                transform: translateX(1px);
-            }
+            0%, 100% { transform: translateX(0); }
+            50% { transform: translateX(0.5px); }
         }
 
         @keyframes mediumShake {
-
-            0%,
-            100% {
-                transform: translate(0, 0);
-            }
-
-            25% {
-                transform: translate(1px, 1px);
-            }
-
-            75% {
-                transform: translate(-1px, -1px);
-            }
+            0%, 100% { transform: translate(0, 0); }
+            25% { transform: translate(0.5px, 0.5px); }
+            75% { transform: translate(-0.5px, -0.5px); }
         }
 
         @keyframes intenseShake {
-
-            0%,
-            100% {
-                transform: translate(0, 0);
-            }
-
-            10% {
-                transform: translate(2px, -1px);
-            }
-
-            20% {
-                transform: translate(-1px, 2px);
-            }
-
-            30% {
-                transform: translate(1px, 1px);
-            }
-
-            40% {
-                transform: translate(-2px, -1px);
-            }
-
-            50% {
-                transform: translate(2px, 2px);
-            }
-
-            60% {
-                transform: translate(-1px, 1px);
-            }
-
-            70% {
-                transform: translate(1px, -2px);
-            }
-
-            80% {
-                transform: translate(-2px, 2px);
-            }
-
-            90% {
-                transform: translate(2px, -1px);
-            }
+            0%, 100% { transform: translate(0, 0); }
+            10% { transform: translate(1px, -0.5px); }
+            20% { transform: translate(-0.5px, 1px); }
+            30% { transform: translate(0.5px, 0.5px); }
+            40% { transform: translate(-1px, -0.5px); }
+            50% { transform: translate(1px, 1px); }
+            60% { transform: translate(-0.5px, 0.5px); }
+            70% { transform: translate(0.5px, -1px); }
+            80% { transform: translate(-1px, 1px); }
+            90% { transform: translate(1px, -0.5px); }
         }
 
         @keyframes crazyShake {
-
-            0%,
-            100% {
-                transform: translate(0, 0) rotate(0deg);
-            }
-
-            10% {
-                transform: translate(3px, -2px) rotate(1deg);
-            }
-
-            20% {
-                transform: translate(-2px, 3px) rotate(-1deg);
-            }
-
-            30% {
-                transform: translate(2px, 2px) rotate(1deg);
-            }
-
-            40% {
-                transform: translate(-3px, -1px) rotate(-1deg);
-            }
-
-            50% {
-                transform: translate(3px, 3px) rotate(1deg);
-            }
-
-            60% {
-                transform: translate(-1px, 2px) rotate(-1deg);
-            }
-
-            70% {
-                transform: translate(2px, -3px) rotate(1deg);
-            }
-
-            80% {
-                transform: translate(-3px, 3px) rotate(-1deg);
-            }
-
-            90% {
-                transform: translate(3px, -1px) rotate(1deg);
-            }
+            0%, 100% { transform: translate(0, 0) rotate(0deg); }
+            10% { transform: translate(1.5px, -1px) rotate(0.5deg); }
+            20% { transform: translate(-1px, 1.5px) rotate(-0.5deg); }
+            30% { transform: translate(1px, 1px) rotate(0.5deg); }
+            40% { transform: translate(-1.5px, -0.5px) rotate(-0.5deg); }
+            50% { transform: translate(1.5px, 1.5px) rotate(0.5deg); }
+            60% { transform: translate(-0.5px, 1px) rotate(-0.5deg); }
+            70% { transform: translate(1px, -1.5px) rotate(0.5deg); }
+            80% { transform: translate(-1.5px, 1.5px) rotate(-0.5deg); }
+            90% { transform: translate(1.5px, -0.5px) rotate(0.5deg); }
         }
     </style>
 </head>
@@ -751,17 +672,39 @@
         }
 
         function updateIntensity() {
-            // Intensity based on successful clicks (score)
-            intensity = Math.min(15, Math.floor(score / 3) + 1);
-            body.className = `intensity-${Math.min(10, intensity)} game-active`;
+            // Gradual intensity escalation with each click
+            intensity = Math.min(15, score + 1);
+            
+            // Apply gradual shake effect based on exact score
+            if (score >= 40) {
+                body.className = 'intensity-10 game-active';
+            } else if (score >= 30) {
+                body.className = 'intensity-9 game-active';
+            } else if (score >= 25) {
+                body.className = 'intensity-8 game-active';
+            } else if (score >= 20) {
+                body.className = 'intensity-7 game-active';
+            } else if (score >= 15) {
+                body.className = 'intensity-6 game-active';
+            } else if (score >= 12) {
+                body.className = 'intensity-5 game-active';
+            } else if (score >= 9) {
+                body.className = 'intensity-4 game-active';
+            } else if (score >= 6) {
+                body.className = 'intensity-3 game-active';
+            } else if (score >= 3) {
+                body.className = 'intensity-2 game-active';
+            } else {
+                body.className = 'intensity-1 game-active';
+            }
 
             // Much faster target spawning based on score
             targetSpeed = Math.max(100, 1500 - (score * 40));
 
-            // Increase max targets based on intensity
-            if (intensity >= 12) maxTargets = 4;
-            else if (intensity >= 8) maxTargets = 3;
-            else if (intensity >= 5) maxTargets = 2;
+            // Increase max targets based on score
+            if (score >= 35) maxTargets = 4;
+            else if (score >= 20) maxTargets = 3;
+            else if (score >= 10) maxTargets = 2;
             else maxTargets = 1;
 
             // Update focus level progress bar
