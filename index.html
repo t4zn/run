@@ -221,34 +221,50 @@
             display: block;
         }
 
+        .hud {
+            position: fixed;
+            top: 30px;
+            left: 50%;
+            transform: translateX(-50%);
+            display: flex;
+            gap: 40px;
+            z-index: 100;
+            background: rgba(255, 255, 255, 0.9);
+            padding: 15px 30px;
+            border-radius: 25px;
+            box-shadow: 0 4px 20px rgba(0, 0, 0, 0.1);
+            backdrop-filter: blur(10px);
+        }
+
         .score {
-            position: absolute;
-            top: 20px;
-            left: 20px;
-            font-size: 16px;
-            color: #666;
-            z-index: 10;
-            font-weight: normal;
-            transition: all 0.1s ease;
+            font-size: 18px;
+            color: #333;
+            font-weight: 600;
+            transition: all 0.2s ease;
         }
 
         .score.hit {
-            color: #333;
+            color: #4CAF50;
+            transform: scale(1.1);
         }
 
         .timer {
-            position: absolute;
-            top: 20px;
-            right: 20px;
-            font-size: 16px;
-            color: #666;
-            z-index: 10;
-            font-weight: normal;
+            font-size: 18px;
+            color: #333;
+            font-weight: 600;
             transition: all 0.2s ease;
         }
 
         .timer.urgent {
-            color: #999;
+            color: #f44336;
+        }
+
+        .hud-label {
+            font-size: 12px;
+            color: #666;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+            margin-bottom: 2px;
         }
 
         @keyframes timerPulse {
@@ -597,8 +613,16 @@
         </div>
 
         <div class="game-screen" id="gameScreen">
-            <div class="score" id="score">0</div>
-            <div class="timer" id="timer">60</div>
+            <div class="hud">
+                <div>
+                    <div class="hud-label">Score</div>
+                    <div class="score" id="score">0</div>
+                </div>
+                <div>
+                    <div class="hud-label">Time</div>
+                    <div class="timer" id="timer">60</div>
+                </div>
+            </div>
         </div>
     </div>
 
@@ -805,32 +829,10 @@
             ];
 
             const randomColor = colors[Math.floor(Math.random() * colors.length)];
-            const shapeType = Math.floor(Math.random() * 6);
 
-            let shapeHTML = '';
-
-            switch (shapeType) {
-                case 0: // Circle
-                    shapeHTML = `<circle cx="20" cy="20" r="16" fill="${randomColor}"/>`;
-                    break;
-                case 1: // Square
-                    shapeHTML = `<rect x="6" y="6" width="28" height="28" rx="4" fill="${randomColor}"/>`;
-                    break;
-                case 2: // Diamond
-                    shapeHTML = `<polygon points="20,4 36,20 20,36 4,20" fill="${randomColor}"/>`;
-                    break;
-                case 3: // Triangle
-                    shapeHTML = `<polygon points="20,4 34,32 6,32" fill="${randomColor}"/>`;
-                    break;
-                case 4: // Star
-                    shapeHTML = `<polygon points="20,2 24,14 36,14 27,22 31,34 20,28 9,34 13,22 4,14 16,14" fill="${randomColor}"/>`;
-                    break;
-                case 5: // Hexagon
-                    shapeHTML = `<polygon points="20,4 32,12 32,28 20,36 8,28 8,12" fill="${randomColor}"/>`;
-                    break;
-            }
-
-            target.innerHTML = `<svg viewBox="0 0 40 40">${shapeHTML}</svg>`;
+            target.innerHTML = `<svg viewBox="0 0 40 40">
+                <circle cx="20" cy="20" r="16" fill="${randomColor}"/>
+            </svg>`;
 
             // Random position (avoiding edges and other targets)
             let x, y, attempts = 0;
